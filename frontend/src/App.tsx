@@ -78,6 +78,7 @@ function App() {
   const showBetterModelMessage =
     model !== CodeGenerationModel.GPT_4O_2024_05_13 &&
     model !== CodeGenerationModel.CLAUDE_3_5_SONNET_2024_06_20 &&
+    model !== CodeGenerationModel.GPT_4o_MINI &&
     appState === AppState.INITIAL;
 
   const showSelectAndEditFeature =

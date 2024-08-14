@@ -3,10 +3,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import screenshot, generate_code, home, evals
+# from routes import screenshot, generate_code, home, evals
+from routes import evals, home, screenshot, generate_code
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+
+
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
 

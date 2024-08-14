@@ -1,9 +1,11 @@
 FROM python:3.12.3-slim-bullseye
 
-ENV POETRY_VERSION 1.4.1
+# ENV POETRY_VERSION 1.4.1
 
 # Install system dependencies
-RUN pip install "poetry==$POETRY_VERSION"
+# RUN pip install "poetry==$POETRY_VERSION"
+
+RUN pip install poetry
 
 # Set work directory
 WORKDIR /app

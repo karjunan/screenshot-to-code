@@ -20,6 +20,7 @@ class Llm(Enum):
     CLAUDE_3_OPUS = "claude-3-opus-20240229"
     CLAUDE_3_HAIKU = "claude-3-haiku-20240307"
     CLAUDE_3_5_SONNET_2024_06_20 = "claude-3-5-sonnet-20240620"
+    GPT_4o_MINI = "gpt-4o-mini",
 
 
 # Will throw errors if you send a garbage string
@@ -28,6 +29,8 @@ def convert_frontend_str_to_llm(frontend_str: str) -> Llm:
         return Llm.GPT_4_VISION
     elif frontend_str == "claude_3_sonnet":
         return Llm.CLAUDE_3_SONNET
+    elif frontend_str == "gpt-4o-mini":
+        return Llm.GPT_4o_MINI
     else:
         return Llm(frontend_str)
 
@@ -41,6 +44,8 @@ async def stream_openai_response(
 ) -> str:
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
 
+
+    print("Client ==> " , client.base_url)
     # Base parameters
     params = {
         "model": model.value,
@@ -55,26 +60,48 @@ async def stream_openai_response(
         model == Llm.GPT_4_VISION
         or model == Llm.GPT_4_TURBO_2024_04_09
         or model == Llm.GPT_4O_2024_05_13
+        or model == Llm.GPT_4o_MINI
+       
     ):
         params["max_tokens"] = 4096
 
-    stream = await client.chat.completions.create(**params)  # type: ignore
+    # print("Starting completions and create api " , params)
+    # print("Messages are  ==>>>  " , messages[1])
+    stream = await client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": messages[0]['content']},
+        {"role": "user", "content": messages[1]['content']}
+        ],
+    stream=True,
+    )
     full_response = ""
-    async for chunk in stream:  # type: ignore
-        assert isinstance(chunk, ChatCompletionChunk)
-        if (
-            chunk.choices
-            and len(chunk.choices) > 0
-            and chunk.choices[0].delta
-            and chunk.choices[0].delta.content
-        ):
+    async for chunk in stream:
+        if chunk.choices[0].delta.content is not None:
+            print(chunk.choices[0].delta.content, end="")
             content = chunk.choices[0].delta.content or ""
-            full_response += content
+            full_response += content;
             await callback(content)
-
+    
     await client.close()
+    # stream = await client.chat.completions.create(**params)  # type: ignore
+    # print("Stream ==> ", stream)
+    # full_response = ""
+    # async for chunk in stream:  # type: ignore
+    #     assert isinstance(chunk, ChatCompletionChunk)
+    #     if (
+    #         chunk.choices
+    #         and len(chunk.choices) > 0
+    #         and chunk.choices[0].delta
+    #         and chunk.choices[0].delta.content
+    #     ):
+    #         content = chunk.choices[0].delta.content or ""
+    #         full_response += content
+    #         await callback(content)
 
-    return full_response
+    # await client.close()
+
+    return full_response;
 
 
 # TODO: Have a seperate function that translates OpenAI messages to Claude messages

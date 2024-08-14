@@ -36,6 +36,7 @@ def assemble_imported_code_prompt(
             }
         ]
     else:
+        print("Going to print user content --> " , user_content)
         return [
             {
                 "role": "system",

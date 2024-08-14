@@ -86,11 +86,16 @@ async def stream_code(websocket: WebSocket):
     validated_input_mode = cast(InputMode, input_mode)
 
     # Read the model from the request. Fall back to default if not provided.
+    # code_generation_model_str = params.get(
+    #     "codeGenerationModel", Llm.GPT_4O_2024_05_13.value
+    # )
     code_generation_model_str = params.get(
-        "codeGenerationModel", Llm.GPT_4O_2024_05_13.value
+        "codeGenerationModel", Llm.GPT_4o_MINI.value
     )
+    print("Generator string from UI --> " , code_generation_model_str)
     try:
         code_generation_model = convert_frontend_str_to_llm(code_generation_model_str)
+        print("Generator Model name  from UI --> " , code_generation_model)
     except:
         await throw_error(f"Invalid model: {code_generation_model_str}")
         raise Exception(f"Invalid model: {code_generation_model_str}")
@@ -123,7 +128,7 @@ async def stream_code(websocket: WebSocket):
         openai_api_key = os.environ.get("OPENAI_API_KEY")
         if openai_api_key:
             print("Using OpenAI API key from environment variable")
-
+    print("Open api key ", openai_api_key)
     if not openai_api_key and (
         code_generation_model == Llm.GPT_4_VISION
         or code_generation_model == Llm.GPT_4_TURBO_2024_04_09
@@ -156,10 +161,10 @@ async def stream_code(websocket: WebSocket):
         else:
             openai_base_url = os.environ.get("OPENAI_BASE_URL")
             if openai_base_url:
-                print("Using OpenAI Base URL from environment variable")
+                print("Using OpenAI Base URL from environment variable", openai_base_url)
 
     if not openai_base_url:
-        print("Using official OpenAI URL")
+        print("Using official OpenAI URL", openai_base_url)
 
     # Get the image generation flag from the request. Fall back to True if not provided.
     should_generate_images = (
@@ -168,7 +173,7 @@ async def stream_code(websocket: WebSocket):
         else True
     )
 
-    print("generating code...")
+    print("generating code...", should_generate_images)
     await websocket.send_json({"type": "status", "value": "Generating code..."})
 
     async def process_chunk(content: str):
@@ -179,6 +184,7 @@ async def stream_code(websocket: WebSocket):
 
     # If this generation started off with imported code, we need to assemble the prompt differently
     if params.get("isImportedFromCode") and params["isImportedFromCode"]:
+        print("Params value => " , params)
         original_imported_code = params["history"][0]
         prompt_messages = assemble_imported_code_prompt(
             original_imported_code, valid_stack, code_generation_model
@@ -195,8 +201,10 @@ async def stream_code(websocket: WebSocket):
                     "content": text,
                 }
             prompt_messages.append(message)
+            print(message)
     else:
         # Assemble the prompt
+        print("Assembling the prompt")
         try:
             if params.get("resultImage") and params["resultImage"]:
                 prompt_messages = assemble_prompt(
@@ -213,7 +221,7 @@ async def stream_code(websocket: WebSocket):
             )
             await websocket.close()
             return
-
+        print("generation type ")
         if params["generationType"] == "update":
             # Transform the history tree into message format
             # TODO: Move this to frontend
@@ -231,7 +239,7 @@ async def stream_code(websocket: WebSocket):
                 prompt_messages.append(message)
 
             image_cache = create_alt_url_mapping(params["history"][-2])
-
+    print("completed generation type" , validated_input_mode)
     if validated_input_mode == "video":
         video_data_url = params["image"]
         prompt_messages = await assemble_claude_prompt_video(video_data_url)
@@ -278,6 +286,8 @@ async def stream_code(websocket: WebSocket):
                 )
                 exact_llm_version = code_generation_model
             else:
+                # print(openai_base_url , " === " , prompt_messages )
+                # print(prompt_messages, openai_api_key)
                 completion = await stream_openai_response(
                     prompt_messages,  # type: ignore
                     api_key=openai_api_key,
